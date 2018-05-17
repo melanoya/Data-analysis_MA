@@ -1,0 +1,266 @@
+---
+title: "HW 2: From correlation to linear mixed-effect models. Assignment sheet"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lme4)
+library(vcd)
+```
+
+## 1. Vowel reduction in Russian
+Pavel Duryagin ran an experiment on perception of vowel reduction in Russian language. The dataset `shva` includes the following variables:  
+_time1_ - reaction time 1  
+_duration_ - duration of the vowel in the stimuly (in milliseconds, ms)  
+_time2_ - reaction time 2  
+_f1_, _f2_, _f3_ - the 1st, 2nd and 3rd formant of the vowel measured in Hz (for a short introduction into formants, see [here](https://home.cc.umanitoba.ca/~krussll/phonetics/acoustic/formants.html))  
+_vowel_ - vowel classified according the 3-fold classification (_A_ - _a_ under stress, _a_ - _a/o_ as in the first syllable before the stressed one, _y_ (stands for shva) - _a/o_ as in the second etc. syllable before the stressed one or after the stressed syllable, cf. _g_[_y_]_g_[_a_]_t_[_A_]_l_[_y_] _gogotala_ `guffawed').  
+In this part, we will ask you to analyse correlation between f1, f2, and duration.
+The dataset is available [https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/duryagin_ReductionRussian.txt](here).
+
+### 1.0 Read the data from file to the variable `shva`.
+```{r 1.0}
+shva <- read.csv('duryagin_ReductionRussian.txt', sep = '\t')
+```
+
+### 1.1 Scatterplot `f1` and `f2` using `ggplot()`. 
+Design it to look like the [following](https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/img/duryagin1.png).
+```{r 1.1}
+shva %>%
+  ggplot(aes(f2, f1)) + 
+  geom_point(aes(colour=factor(vowel)), show.legend = F) + 
+  scale_y_reverse() + 
+  scale_x_reverse() + 
+  labs(title='f2 and f1 of the reduced and stressed vowels', caption="Data from Duryagin 2018")
+```
+
+### 1.2 Plot the boxplots of `f1` and `f2` for each vowel using `ggplot()`.
+Design it to look like [this](https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/img/duryagin2.png) and [this](https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/img/duryagin3.png).
+```{r 1.2}
+# f1 boxplot
+shva %>%
+  ggplot(aes(vowel, f1, fill=vowel)) +
+  geom_boxplot(show.legend = F) +
+  coord_flip() +
+  xlab('') +
+  labs(title = 'f1 distribution in each vowel', caption = 'Data from Duryagin 2018')
+
+# f2 boxplot
+
+shva %>%
+  ggplot(aes(vowel, f2, fill=vowel)) + 
+  geom_boxplot(show.legend = F) + 
+  coord_flip() + 
+  xlab('') +
+  labs(title = 'f2 distribution for each vowel', caption = "Data from Duryagin 2018")
+
+
+```
+
+### 1.3 Which `f1` can be considered outliers in _a_ vowel?
+We assume outliers to be those observations that lie outside 1.5 * IQR, where IQR, the 'Inter Quartile Range', is the difference between the 1st and the 3rd quartile (= 25% and 75% percentile).
+```{r 1.3}
+
+
+```
+
+### 1.4 Calculate Pearson's correlation of `f1` and `f2` (all data)
+```{r 1.4}
+cor(shva$f1, shva$f2, method='pearson')
+```
+
+### 1.5 Calculate Pearson's correlation of `f1` and `f2` for each vowel
+```{r 1.5}
+
+cor(shva[shva$vowel=='a',]$f1, shva[shva$vowel=='a',]$f2)
+cor(shva[shva$vowel=='y',]$f1, shva[shva$vowel=='y',]$f2)
+cor(shva[shva$vowel=='A',]$f1, shva[shva$vowel=='A',]$f2)
+
+
+```
+
+### 1.6
+```{r 1.6}
+model1_1 <- lm(f2~f1, data=shva)
+coefficients(model1_1)
+```
+
+### 1.6.1
+$$1639.70215 - 0.42875 \cdot x$$
+### 1.6.2
+$$0.3319$$
+
+### 1.6.3
+```{r 1.6.3}
+
+model1_2 <- lm(f1~f2, data=shva)
+shva$model1_2_prediction <- predict(model1_2)
+shva %>%
+  ggplot(aes(f2, f1)) +
+  geom_point(aes(color=vowel)) +
+  geom_line(aes(f2, model1_2_prediction)) +
+  labs(title = 'f1 and f2 of reduced and stressed vowels', caption='Data from Duryagin 2018') + 
+  scale_y_reverse() + 
+  scale_x_reverse() +
+  theme(legend.position='none')
+
+
+```
+
+## 2. English Lexicon Project data
+880 nouns, adjectives and verbs from the English Lexicon Project data (Balota et al. 2007).
+
+* `Format` -- A data frame with 880 observations on the following 5 variables.
+* `Word` -- a factor with lexical stimuli.
+* `Length` -- a numeric vector with word lengths.
+* `SUBTLWF` -- a numeric vector with frequencies in film subtitles.
+* `POS` -- a factor with levels JJ (adjective) NN (noun) VB (verb)
+* `Mean_RT` -- a numeric vector with mean reaction times in a lexical decision task
+Source (http://elexicon.wustl.edu/WordStart.asp)
+
+Data from Natalya Levshina's `RLing` package available (here)[https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/ELP.csv]
+
+### 2.0 Read the data from file to the variable `elp`.
+```{r 2.0}
+elp <- read.csv('https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/ELP.csv')
+```
+
+### 2.1 Which two variables have the highest Pearson's correlaton value?
+```{r 2.1}
+elp %>%
+  select(Length, SUBTLWF, Mean_RT) %>%
+  cor(use='all.obs', method='pearson')
+
+cor(elp$Mean_RT, elp$Length) # ну вот эти (0.53)
+```
+
+### 2.2 Group your data by parts of speech and make a scatterplot of SUBTLWF and Mean_RT.
+```{r 2.2}
+elp %>%
+  ggplot(aes(SUBTLWF, Mean_RT)) +
+  geom_point(aes(colour = Length)) +
+  scale_color_continuous(low = "lightblue", high = "red") +
+  facet_wrap(~POS, scales = "free_x") +
+  scale_x_log10() +
+  theme_bw() +
+  labs(caption="data from (Balota et al. 2007)")
+
+```
+
+We've used `scale_color_continuous(low = "lightblue", high = "red")` as a parameter of `ggplot()`.
+
+### 2.3 Use the linear regression model to predict `Mean_RT` by `log(SUBTLWF)` and `POS`.
+#### 2.3.1 Provide the result regression formula
+```{r 2.3.1}
+model2_1 <- lm(Mean_RT ~ log(SUBTLWF) + POS, data=elp)
+coefficients(model2_1)
+```
+
+#### 2.3.2 Provide the adjusted R$^2$
+$$ 786.176 - 37.573 \cdot x_1 - 12.530 \cdot x_2 - 42.804 \cdot x_3$$
+
+#### 2.3.3 Add the regression line in the scatterplot.
+```{r 2.3.3}
+summary(model2_1)$adj.r.squared
+```
+
+### 2.4 Use the mixed-efects model to predict `Mean_RT` by `log(SUBTLWF)` using POS intercept as a random effect
+```{r 2.4.1}
+model2_2 <- lmer(Mean_RT~log(SUBTLWF) + (1 | POS), data=elp)
+fixef(model2_2)
+```
+
+#### 2.4.1 Provide the fixed effects formula
+$$767.70941-37.666 \cdot x$$
+
+#### 2.4.2 Provide the variance for intercept argument for `POS` random effects
+$$414.4$$
+
+#### 2.4.3 Add the regression line to the scatterplot
+```{r 2.4.3}
+model2_2_new <- lmer(Mean_RT~log(SUBTLWF) + (1 | POS), data=elp)
+elp$model2_2_new_prediction <- predict(model2_2_new)
+
+elp %>% 
+  ggplot(aes(log(SUBTLWF), Mean_RT, color=POS)) + 
+  geom_point() + 
+  facet_wrap(~POS) + 
+  geom_line(aes(log(SUBTLWF), model2_2_new_prediction), color='black') + 
+  labs(caption='data from (Balota et al. 2007)') + 
+  theme(legend.position='none')
+```
+
+## 3. Dutch causative constructions
+
+This is a data set with examples of two Dutch periphrastic causatives extracted from newspaper corpora.
+
+The data frame includes 100 observations on the following 7 variables:
+
+* Cx -- a factor with levels doen_V and laten_V
+* CrSem -- a factor that contains the semantic class of the Causer with levels Anim (animate) and Inanim (inanimate).
+* CeSem -- a factor that describes the semantic class of the Causee with levels Anim (animate) and Inanim (inanimate).
+* CdEv -- a factor that describes the semantic domain of the caused event expressed by the Effected Predicate. The levels are Ment (mental), Phys (physical) and Soc (social).
+* Neg -- a factor with levels No (absence of negation) and Yes (presence of negation).
+* Coref -- a factor with levels No (no coreferentiality) and Yes (coreferentiality).
+* Poss -- a factor with levels No (no overt expression of possession) Yes (overt expression of possession)
+
+Data from Natalya Levshina's `RLing` package available (here)[https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/dutch_causatives.csv]
+
+### 3.0 Read the data from file to the variable `d_caus`.
+```{r 3.0}
+d_caus <- read.csv('https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/dutch_causatives.csv', sep = ',')
+```
+
+### 3.1 We are going to test whether the association between `Aux` and other categorical variables (`Aux` ~ `CrSem`, `Aux` ~ `CeSem`, etc) is statistically significant. The assiciation with which variable should be analysed using Fisher's Exact Test and not using Pearson's Chi-squared Test? Is this association statistically significant?
+```{r 3.1}
+table <- table(data$Aux, data$CeSynt) 
+chisq.test(table)
+```
+
+### 3.2. Test the hypothesis that `Aux` and `EPTrans` are not independent with the help of Pearson's Chi-squared Test. 
+```{r 3.2}
+
+```
+
+### 3.3 Provide expected values for Pearson's Chi-squared Test of `Aux` and `EPTrans` variables.
+```{r 3.3}
+
+```
+
+### 3.4. Calculate the odds ratio.
+```{r 3.4}
+
+
+```
+
+### 3.5 Calculate effect size for this test using Cramer's V (phi).
+```{r 3.5}
+
+```
+
+### 3.6. Report the results of independence test using the following template:
+```
+We have / have not found a significant association between variables ... and ... (p < 0.001).  The odds of ... were ... times higher / lower in (group ....) than in (group ....). Effect size is large / medium / small (Cramer's V = ....).
+```
+
+### 3.7 Visualize the distribution using mosaic plot.
+Use `mosaic()` function from `vcd` library.
+```{r 3.7}
+
+```
+
+Below is an example of how to use mosaic() with three variables.
+```{r 3.7.1}
+# mosaic(~ Aux + CrSem + Country, data=d_caus, shade=TRUE, legend=TRUE)
+```
+
+### 3.8 Why is it not recommended to run multiple Chisq tests of independence on different variables within your dataset whithout adjusting for the multiplicity? (i.e. just testing all the pairs of variables one by one)  
+```
+
+```
+
+### 3.9 Provide a short text (300 words) describing the hypothesis on this study and the results of your analysis.
+```{r 3.9}
+
+```
+
