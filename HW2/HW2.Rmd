@@ -220,21 +220,28 @@ chisq.test(table)
 ### 3.2. Test the hypothesis that `Aux` and `EPTrans` are not independent with the help of Pearson's Chi-squared Test. 
 ```{r 3.2}
 
+table <- table(d_caus$Aux, d_caus$EPTrans) 
+chisq.test(table)
 ```
 
 ### 3.3 Provide expected values for Pearson's Chi-squared Test of `Aux` and `EPTrans` variables.
 ```{r 3.3}
+chisq.test(table)$expected
 
 ```
 
 ### 3.4. Calculate the odds ratio.
 ```{r 3.4}
 
-
+fisher.test(table)$estimate
 ```
 
 ### 3.5 Calculate effect size for this test using Cramer's V (phi).
 ```{r 3.5}
+
+
+library(questionr)
+cramer.v(table)
 
 ```
 
